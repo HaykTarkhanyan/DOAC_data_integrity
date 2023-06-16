@@ -1,0 +1,134 @@
+{
+    "501-701-001": {
+        "1": {
+            "REP": {
+                "AFXa": {
+                    "status": "OK",
+                    "difference": 5.0
+                },
+                "DTI": {
+                    "status": "OK",
+                    "difference": 5.0
+                }
+            },
+            "SI": {
+                "AFXa": {
+                    "status": "Received 2 runs with completed status"
+                },
+                "DTI": {
+                    "status": "Received 2 runs with completed status"
+                }
+            },
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-101": {
+        "1": {
+            "REP": {
+                "AFXa": {
+                    "status": "OK",
+                    "difference": 195.0
+                },
+                "DTI": {
+                    "status": "OK",
+                    "difference": 195.0
+                }
+            },
+            "SI": {
+                "AFXa": {
+                    "status": "Received 2 runs containing aborted status"
+                },
+                "DTI": {
+                    "status": "Received 2 runs containing aborted status"
+                }
+            },
+            "PD": {
+                "status": "112.0 - wrong number of blood draws"
+            }
+        },
+        "2": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        },
+        "3": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-105": {
+        "1": {
+            "REP": {
+                "AFXa": {
+                    "status": "OK",
+                    "difference": 240.0
+                },
+                "DTI": {
+                    "status": "OK",
+                    "difference": 240.0
+                }
+            },
+            "SI": {
+                "AFXa": {
+                    "status": "Received 2 runs containing error status"
+                },
+                "DTI": {
+                    "status": "Received 2 runs containing error status"
+                }
+            },
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-002": {
+        "1": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-003": {
+        "1": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-004": {
+        "1": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-005": {
+        "1": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    },
+    "501-701-104": {
+        "1": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        },
+        "2": {
+            "PD": {
+                "status": "404.0 - PD not found"
+            }
+        }
+    },
+    "501-701-106": {
+        "1": {
+            "PD": {
+                "status": "No Protocol Deviation"
+            }
+        }
+    }
+}
