@@ -1,3 +1,5 @@
+
+# ! there is a lot of code duplication, need to refactor later
 import pandas as pd 
 import numpy as np
 import logging
@@ -23,7 +25,7 @@ logger.addHandler(file_handler)
 
 class Checker:
     def __init__(self, data_path) -> None:
-        self.checks = {}
+        self.checks_list = []
         self.data_path = data_path
         
         self.df_dict = pd.read_excel(self.data_path, sheet_name=None)
@@ -49,8 +51,46 @@ class Checker:
         pass
     
     def structural_integrity(self): # SI
-        pass 
-    
+        def SI_check(x):
+            if len(x) < 2:
+                return "Received <2 runs"
+            if len(x) > 2:
+                return "Received >2 runs"
+            if all(x.values == "Test Completed"):
+                return "Received 2 runs with completed status"
+            if "Test Error" in x.values:
+                return "Received 2 runs containing error status"    
+            if "Test Aborted" in x.values:
+                return "Received 2 runs containing aborted status"
+                    
+        res = self.TEG.reset_index().groupby(['UID', "TEST_NAME"])["TEG_STATUS"].apply(SI_check)
+
+        check_name = "SI"
+        col_name = "TEG_STATUS"
+
+        res_dict = res.reset_index()
+        res_dict["UID_TEST_NAME"] = res_dict["UID"] + "_" + res_dict["TEST_NAME"]
+        res_dict = res_dict[['UID_TEST_NAME', col_name]] \
+                            .set_index("UID_TEST_NAME") \
+                            .to_dict()[col_name]
+
+        new_dict = {}
+
+        # ! from copilot, later check better
+        for key, value in res_dict.items():
+            sample_id, subject_id, test_name = key.split("_")
+            if sample_id not in new_dict:
+                new_dict[sample_id] = {}
+            if subject_id not in new_dict[sample_id]:
+                new_dict[sample_id][subject_id] = {check_name: {}}
+            if test_name not in new_dict[sample_id][subject_id]:
+                new_dict[sample_id][subject_id][check_name][test_name] = {}
+            
+            new_dict[sample_id][subject_id][check_name][test_name]["status"] = value
+
+        self.checks_list.append(new_dict)
+        return new_dict
+        
     def time_between_replicate_runs(self): # REP
         def rep_check(x):
             if len(x) < 2:
@@ -67,9 +107,7 @@ class Checker:
         res_dict = res_dict[['UID_TEST_NAME', "TEG_RUN_DATE_TIME"]] \
                             .set_index("UID_TEST_NAME") \
                             .to_dict()["TEG_RUN_DATE_TIME"]
-        res_dict
-
-
+                            
         # ! from copilot, later check better
         new_dict = {}
         
@@ -83,12 +121,14 @@ class Checker:
                 new_dict[sample_id][subject_id]["REP"][test_name] = {}
             if isinstance(value, float):
                 new_dict[sample_id][subject_id]["REP"][test_name]["status"] = "OK"
-                new_dict[sample_id][subject_id]["REP"][test_name]["run_time"] = value
+                new_dict[sample_id][subject_id]["REP"][test_name]["difference"] = value
             else:
                 new_dict[sample_id][subject_id]["REP"][test_name]["status"] = "Missing Run Time"
-                new_dict[sample_id][subject_id]["REP"][test_name]["run_time"] = "NA"
+                new_dict[sample_id][subject_id]["REP"][test_name]["difference"] = "NA"
     
+        self.checks_list.append(new_dict)
         return new_dict
+    
     def data_quality_requirement(self): # DQR
         pass 
     
@@ -106,7 +146,26 @@ class Checker:
     
     def EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
         pass 
-        
+    
+    def restructure_json(self):     
+        # TODO: rename variables
+        new_data = {}
+        for item in self.checks_list:
+            for course_code, runs in item.items():
+                for run_id, tasks in runs.items():
+                    for task_id, results in tasks.items():
+                        for test_name, test_results in results.items():
+                            if course_code not in new_data:
+                                new_data[course_code] = {}
+                            if run_id not in new_data[course_code]:
+                                new_data[course_code][run_id] = {}
+                            if task_id not in new_data[course_code][run_id]:
+                                new_data[course_code][run_id][task_id] = {}
+                            new_data[course_code][run_id][task_id][test_name] = test_results
+
+        self.checks = new_data
+    
+    
         
     # def administered_after_being_drawn(self):
     #     msg = "Checking if administered date is after drawn date"
@@ -175,13 +234,17 @@ class Checker:
 
     
     
+import json
 
 ch = Checker(DATA_PATH)
 
-ch.administered_after_being_drawn()
-ch.compound_name_mismatch()
+# ch.administered_after_being_drawn()
+# ch.compound_name_mismatch()
+ch.time_between_replicate_runs()
+ch.structural_integrity()
 
-print(ch.checks)
-        
-        
+ch.restructure_json()
+
+with open("checks_new_format.json", "w") as f:
+    f.write(json.dumps(ch.checks, indent=4))
         

@@ -1,0 +1,68 @@
+{
+    "501-701-001": {
+        "1": {
+            "REP": {
+                "AFXa": {
+                    "status": "OK",
+                    "difference": 5.0
+                },
+                "DTI": {
+                    "status": "OK",
+                    "difference": 5.0
+                }
+            },
+            "SI": {
+                "AFXa": {
+                    "status": "Received 2 runs with completed status"
+                },
+                "DTI": {
+                    "status": "Received 2 runs with completed status"
+                }
+            }
+        }
+    },
+    "501-701-101": {
+        "1": {
+            "REP": {
+                "AFXa": {
+                    "status": "OK",
+                    "difference": 195.0
+                },
+                "DTI": {
+                    "status": "OK",
+                    "difference": 195.0
+                }
+            },
+            "SI": {
+                "AFXa": {
+                    "status": "Received 2 runs containing aborted status"
+                },
+                "DTI": {
+                    "status": "Received 2 runs containing aborted status"
+                }
+            }
+        }
+    },
+    "501-701-105": {
+        "1": {
+            "REP": {
+                "AFXa": {
+                    "status": "OK",
+                    "difference": 240.0
+                },
+                "DTI": {
+                    "status": "OK",
+                    "difference": 240.0
+                }
+            },
+            "SI": {
+                "AFXa": {
+                    "status": "Received 2 runs containing error status"
+                },
+                "DTI": {
+                    "status": "Received 2 runs containing error status"
+                }
+            }
+        }
+    }
+}
