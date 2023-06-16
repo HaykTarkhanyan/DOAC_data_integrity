@@ -45,11 +45,14 @@ class Checker:
         
         self.EDC["UID"] = self.EDC["Subject_ID"] + "_" + self.EDC["Sample_Num"].astype(str)
         self.EDC.set_index("UID", inplace=True)
-                
+        
+        self.LAB['UID'] = self.LAB['LAB_SUB_ID'] + "_" + self.LAB['LAB_SAMPLE_NUM'].astype(str)
+        self.LAB.set_index("UID", inplace=True)
+        
         self.EDC_AND_LAB = self.EDC.join(self.LAB)
     
     def DM_input(self): # DM
-        pass 
+        pass
     
     def PD_comment(self): # PD
         # ? how should I return this
@@ -76,7 +79,7 @@ class Checker:
         for key, value in res_dict.items():
             sample_id, subject_id = key.split("_")
             if sample_id not in new_dict:
-                        new_dict[sample_id] = {}
+                new_dict[sample_id] = {}
             if subject_id not in new_dict[sample_id]:
                 new_dict[sample_id][subject_id] = {}
             if test_name not in new_dict[sample_id][subject_id]:
@@ -168,7 +171,28 @@ class Checker:
         return new_dict
     
     def data_quality_requirement(self): # DQR
-        pass 
+        # ! this just return OK for all the records
+        records = set(self.EDC.index.to_list() + self.TEG.index.to_list() 
+                    + self.LAB.index.to_list())
+        res_dict = {i: "OK" for i in records}
+
+        test_name = "DQR"
+
+        new_dict = {}
+        for key, value in res_dict.items():
+            sample_id, subject_id = key.split("_")
+            if sample_id not in new_dict:
+                new_dict[sample_id] = {}
+            if subject_id not in new_dict[sample_id]:
+                new_dict[sample_id][subject_id] = {}
+            if test_name not in new_dict[sample_id][subject_id]:
+                new_dict[sample_id][subject_id][test_name] = {}
+            
+            new_dict[sample_id][subject_id][test_name]["status"] = value
+
+        self.checks_list.append(new_dict)
+        return new_dict
+        
     
     def contribution_to_final_dataset(self): # FADS
         pass 
@@ -179,9 +203,16 @@ class Checker:
     def DTI_R_contribution(self): # DTI
         pass
     
-    def lab(self): # might be only one comment, might be multiple keys 
-        pass
-    
+    def lab_LLOQ(self): # might be only one comment, might be multiple keys 
+        res = (self.LAB["LAB_REP_results"] < self.LAB["LAB_LLOQ"]) \
+               .replace({False: "OK", True: "Below LLOQ"})
+        res_dict = res.to_dict()
+        
+        new_dict = self.make_json_nested(res_dict, "LAB_LLOQ")
+        
+        self.checks_list.append(new_dict)
+        return new_dict
+        
     def EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
         pass 
     
@@ -203,8 +234,40 @@ class Checker:
 
         self.checks = new_data
     
-    
-        
+    @staticmethod
+    def make_json_nested(res_dict, test_name):
+        """For handling simple cases like 
+        '501-701-101_1': 'OK'
+
+        will return
+        {
+            "501-701-101": 
+            {
+                "1": 
+                {
+                    f"test_name":
+                    {
+                        "status": "OK"    
+                    }
+                }
+            }
+        }
+
+        """
+        new_dict = {}
+        for key, value in res_dict.items():
+            sample_id, subject_id = key.split("_")
+            if sample_id not in new_dict:
+                new_dict[sample_id] = {}
+            if subject_id not in new_dict[sample_id]:
+                new_dict[sample_id][subject_id] = {}
+            if test_name not in new_dict[sample_id][subject_id]:
+                new_dict[sample_id][subject_id][test_name] = {}
+            
+            new_dict[sample_id][subject_id][test_name]["status"] = value
+
+        return new_dict
+            
     # def administered_after_being_drawn(self):
     #     msg = "Checking if administered date is after drawn date"
     #     logger.info(msg)
