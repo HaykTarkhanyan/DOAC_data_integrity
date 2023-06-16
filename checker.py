@@ -3,6 +3,7 @@
 import pandas as pd 
 import numpy as np
 import logging
+import json
 import os
 
 DATA_PATH = "data_integrity.xlsx"
@@ -41,6 +42,9 @@ class Checker:
         
         self.TEG['UID'] = self.TEG['TEG_SUB_ID'] + "_" + self.TEG['TEG_SAMPLE_NUM'].astype(str)
         self.TEG.set_index("UID", inplace=True)  
+        
+        self.EDC["UID"] = self.EDC["Subject_ID"] + "_" + self.EDC["Sample_Num"].astype(str)
+        self.EDC.set_index("UID", inplace=True)
                 
         self.EDC_AND_LAB = self.EDC.join(self.LAB)
     
@@ -48,9 +52,43 @@ class Checker:
         pass 
     
     def PD_comment(self): # PD
-        pass
-    
+        # ? how should I return this
+
+        def protocol_deviation(x):
+            no_code = pd.isna(x['Protocol_deviation_code'])
+            no_description = pd.isna(x['Protocol_deviation_description'])
+            
+            if no_code and no_description:
+                return "No Protocol Deviation"
+            elif no_code and (not no_description):
+                return x['Protocol_deviation_description']
+            elif (not no_code) and no_description:
+                return x['Protocol_deviation_code']
+            else:
+                return str(x['Protocol_deviation_code']) + " - " + x['Protocol_deviation_description']
+        
+        res = self.EDC.apply(protocol_deviation, axis=1)
+
+        res_dict = res.to_dict()
+        
+        test_name = "PD"
+        new_dict = {}
+        for key, value in res_dict.items():
+            sample_id, subject_id = key.split("_")
+            if sample_id not in new_dict:
+                        new_dict[sample_id] = {}
+            if subject_id not in new_dict[sample_id]:
+                new_dict[sample_id][subject_id] = {}
+            if test_name not in new_dict[sample_id][subject_id]:
+                new_dict[sample_id][subject_id][test_name] = {}
+            
+            new_dict[sample_id][subject_id][test_name]["status"] = value
+
+        self.checks_list.append(new_dict)
+
     def structural_integrity(self): # SI
+        # !
+        # ? What if one run is error and one is aborted? 
         def SI_check(x):
             if len(x) < 2:
                 return "Received <2 runs"
@@ -135,7 +173,7 @@ class Checker:
     def contribution_to_final_dataset(self): # FADS
         pass 
     
-    def AFXA_r_contribution(self): # AFXA
+    def AFXa_r_contribution(self): # AFXa
         pass 
     
     def DTI_R_contribution(self): # DTI
@@ -233,18 +271,17 @@ class Checker:
 
 
     
-    
-import json
 
-ch = Checker(DATA_PATH)
+if __name__ == "__main__":    
+    ch = Checker(DATA_PATH)
+    # ch.administered_after_being_drawn()
+    # ch.compound_name_mismatch()
+    ch.time_between_replicate_runs()
+    ch.structural_integrity()
+    ch.PD_comment()
 
-# ch.administered_after_being_drawn()
-# ch.compound_name_mismatch()
-ch.time_between_replicate_runs()
-ch.structural_integrity()
+    ch.restructure_json()
 
-ch.restructure_json()
-
-with open("checks_new_format.json", "w") as f:
-    f.write(json.dumps(ch.checks, indent=4))
+    with open("checks_new_format.json", "w") as f:
+        f.write(json.dumps(ch.checks, indent=4))
         
