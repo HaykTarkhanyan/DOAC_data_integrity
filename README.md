@@ -24,8 +24,12 @@ something like
                 # whether or not 2 replicate runs have distance more than 10 minutes
                 # or data is missing
                 {
-                    "DTI": "OK",
-                    "AFXa": "OK",
+                    "DTI": 
+                        {
+                            "status": "OK", # or "Missing Run Time"
+                            "difference": 10, # float or "NA" (if status is "Missing Run Time")
+                        }
+                    "AFXa": # same as DTI
                 }
             "DQR": "OK",
                 # for now just return panir
