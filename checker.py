@@ -240,7 +240,14 @@ class Checker:
         return new_dict
         
     def EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
-        pass 
+        res = self.EDC['Last_drug_administration_date_time'] > self.EDC['WBC_date_time']
+        res.replace({False: "OK", True: "Administration > WBC"}, inplace=True)
+        res_dict = res.to_dict()
+
+        new_dict = self.make_json_nested(res_dict, "EDC_timing")
+        
+        self.checks_list.append(new_dict)
+        return new_dict
     
     def run_all_checks(self):
         checks = ["DM_input", "PD_comment", "structural_integrity",  \

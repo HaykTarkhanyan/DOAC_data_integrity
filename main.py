@@ -10,10 +10,7 @@ app = FastAPI()
 def run_all_checks(data_path: str):
     ch = Checker(data_path)
     
-    ch.time_between_replicate_runs()
-    ch.structural_integrity()
-    ch.PD_comment()
-    ch.restructure_json()
+    ch.run_all_checks()
     
     return ch.checks
 
