@@ -13,7 +13,7 @@ df_dict = pd.read_excel(DATA_PATH, sheet_name=None)
 
 # set up logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 file_handler = logging.FileHandler(os.path.join("logs", "checker.log"), mode="w")
 
@@ -22,6 +22,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
+
 
 
 class Checker:
@@ -249,24 +250,113 @@ class Checker:
         res_dict = res.to_dict()
 
         new_dict = self.make_json_nested(res_dict, "EDC_timing")
-        
+        print(new_dict)
         self.checks_list.append(new_dict)
         return new_dict
+    
+    def AFXa_and_DTI(self):
+        # ! talk with Arman about what we will be displaying
+        # getting info on which runs were successful
+        group = self.TEG.groupby("UID")['TEG_STATUS']
+        completed_or_not = group.apply(lambda x: np.all(x == "Test Completed")) \
+                                .replace(False, "Not all tests completed") \
+                                .reset_index()
+    
+        not_completed = completed_or_not[completed_or_not["TEG_STATUS"] == "Not all tests completed"]
+        completed = completed_or_not[completed_or_not['TEG_STATUS'] == True]
+
+        not_completed_ids = not_completed["UID"].to_list()
+        completed_ids = completed["UID"].to_list()
+
+        # will need this later
+        not_completed_dict = list(not_completed.set_index('UID').to_dict().values())[0]
+
+        # difference over mean check 
+        completed = self.TEG[self.TEG.index.isin(completed_ids)]
+
+        res = completed.groupby(["UID", "TEST_NAME"]) \
+                .agg(delta_r=("TEG_VALUE_R", lambda x: abs(x[0] - x[1])),  
+                     mean_r= ("TEG_VALUE_R", lambda x: np.mean(x)))
+        res = res.reset_index()
+
+        res['difference_over_mean_check'] = np.where((res['delta_r'] / res['mean_r']) <= 0.4, "OK", "Fail")
+
+        # over 4 standard deviations check
+        means = res.groupby("TEST_NAME")["delta_r"].apply(np.mean)
+        afxa_mean, dti_mean = means.loc["AFXa"], means.loc["DTI"]
+        logger.debug(f"afxa mean: {afxa_mean}, dti mean: {dti_mean}")
+        std_devs = res.groupby("TEST_NAME")["delta_r"].apply(np.std)
+        afxa_std, dti_std = std_devs.loc["AFXa"], std_devs.loc["DTI"]
+        logger.debug(f"afxa std: {afxa_std}, dti std: {dti_std}")
+
+
+        def std_deviation_check(x):
+            if x['TEST_NAME'] == "AFXa":
+                sigmas = (x['delta_r'] - afxa_mean) / afxa_std 
+            elif x['TEST_NAME'] == "DTI":
+                sigmas = (x['delta_r'] - dti_mean) / dti_std
+            
+            if sigmas <= 4:
+                return "OK"
+            return "Fail"
+            
+        res["over_4_std_devs_check"] = res.apply(std_deviation_check, axis=1)
+
+        res.drop(["delta_r", "mean_r"], axis=1)
+        
+        def get_r_time_status(x):
+            diff = x['difference_over_mean_check']
+            dev = x['over_4_std_devs_check']
+
+            if diff == "Fail" and dev == "Fail":
+                return "Failed both `difference over mean` and `over 4 std devs`"
+            elif diff == "Fail":
+                return "Failed `difference over mean` check"
+            elif dev == "Fail":
+                return "Failed `over 4 std devs` check"
+            else:
+                return "OK"
+
+        res["r_time_status"] = res.apply(get_r_time_status, axis=1)
+
+        # ! Assumes that test status for the same run is the same for all channels (DTI, AFXa)
+        def process_output(res, test_name):
+            res = res[res["TEST_NAME"] == test_name]
+
+            res = res[["UID", "r_time_status"]].set_index("UID")
+            
+            res = pd.Series(res["r_time_status"], name=test_name)
+            res_dict = res.to_dict()
+            res_dict.update(not_completed_dict)
+            
+            new_dict = self.make_json_nested(res_dict, test_name)
+            
+            self.checks_list.append(new_dict)
+            return new_dict
+            
+        process_output(res, "AFXa")
+        process_output(res, "DTI")
+
+
     
     def run_all_checks(self):
         checks = ["DM_input", "PD_comment", "structural_integrity",  \
                   "time_between_replicate_runs", "data_quality_requirement", \
                   "contribution_to_final_dataset", "AFXa_r_contribution", "DTI_R_contribution", \
-                  "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing"]
-        for check in checks:
-            logging.info(f"Running {check} check")
-            getattr(self, check)()
+                  "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing", "AFXa_and_DTI"]
         
+        
+        checks = ["EDC_timing", "AFXa_and_DTI"]
+        for check in checks:
+            logger.info(f"Running {check} check")
+            res = getattr(self, check)()
+            logger.debug(f"{res}\n")
         self.restructure_json()
         
         file_path = os.path.join(self.output_folder, self.file_name)
         
-        logging.info(f"Saving checks to {file_path}")
+        logger.info(f"Saving checks to {file_path}")
+        logger.info(f"Checks: {self.checks}")
         with open(file_path, 'w') as f:
             json.dump(self.checks, f)
         
@@ -323,20 +413,7 @@ class Checker:
             new_dict[sample_id][subject_id][test_name]["status"] = value
 
         return new_dict
-            
-    # def administered_after_being_drawn(self):
-    #     msg = "Checking if administered date is after drawn date"
-    #     logger.info(msg)
-        
-    #     status = "OK"
-        
-    #     if self.EDC['Last_drug_administration_date_time'] > self.EDC['WBC_date_time']:
-    #         status = "Administered date is after drawn date (EDC)"    
-    #         logger.warning(status)
-        
-    #     self.checks['administered_after_being_drawn'] = status
-               
-    
+
     
     # TEG
     # def r_time_checks(self):
@@ -361,19 +438,19 @@ class Checker:
 
     
 
-if __name__ == "__main__":    
-    ch = Checker(DATA_PATH)
-    # ch.administered_after_being_drawn()
-    # ch.compound_name_mismatch()
+# if __name__ == "__main__":    
+#     ch = Checker(DATA_PATH)
+#     # ch.administered_after_being_drawn()
+#     # ch.compound_name_mismatch()
     
-    print(dir(ch))
-    ch.time_between_replicate_runs()
-    ch.structural_integrity()
-    ch.PD_comment()
+#     print(dir(ch))
+#     ch.time_between_replicate_runs()
+#     ch.structural_integrity()
+#     ch.PD_comment()
 
-    ch.restructure_json()
+#     ch.restructure_json()
 
-    with open("checks_new_format.json", "w") as f:
-        f.write(json.dumps(ch.checks, indent=4))
+#     with open("checks_new_format.json", "w") as f:
+#         f.write(json.dumps(ch.checks, indent=4))
         
         
