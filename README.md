@@ -6,18 +6,52 @@ Assumes that should get a path of the data as input and return JSON
 something like
 ```python
 {
-    "EDC":
+    "Subject ID": # 507-...
     {
-        "Drug administation and WBC draw times": "OK",
-        "Drug compound and LAB compound": "MISMATCH"
-    }
-    "TEG":
-    {
-        "ratio of absolute difference between 2 runs (by compound) and the mean": "OK",
+        "Sample ID": # 001
+        {
+            "DM_input": "OK",
+                # if there were more than 2 runs (criteria may change in future)
+            "PD": "OK",
+                {
+                    "status": "OK", # if PD col is `EDC` is empty
+                    "comment": "some comment", # value of PD col
+                }
+            "SI": "OK", # structural integrity
+                # number of runs received (and it runs were problematic)
+
+            "REP:
+                # whether or not 2 replicate runs have distance more than 10 minutes
+                # or data is missing
+                {
+                    "DTI": "OK",
+                    "AFXa": "OK",
+                }
+            "DQR": "OK",
+                # for now just return panir
+            "FADS": "OK",
+                # if AFX_a and "DTI_a" are both OK, else ...
+            "AFXa_r": "OK",
+                # only one run for a compound
+                # difference over average check
+                # 4 sigma deviation check
+            "DTI_r": "OK",
+                # same as for AFXa_r
+            "LAB_comment": "OK",
+                # is there a compound name mismatch
+                # reportable res == 0
+                # reportable res < LLOQ
+            "EDC_timing": "OK",
+                # last drug administration date > WBC date
+        }
+        "Sample Id": # 002
         ...
+        
     }
 }
 ```
+
+Below is outdated
 
 ## Checks to perform
 ### EDC
