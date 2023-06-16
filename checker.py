@@ -213,8 +213,46 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
+    def lab_edc_compound_mismatch(self): 
+        def mismatch_check_helper(x):
+            if x['Cohort'] == "A":
+                msg = "Healthy"
+            else:
+                if (pd.isna(x["Drug_compound"])) and (pd.isna(x["LAB_compound"])):
+                    msg = "Drugs from both EDC and LAB are missing"
+                elif pd.isna(x["Drug_compound"]):
+                    msg = "Drug from EDC is missing"
+                elif pd.isna(x["LAB_compound"]):
+                    msg = "Drug from LAB is missing"
+                elif x["Drug_compound"] != x["LAB_compound"]:
+                    msg = "Drugs from EDC and LAB do not match"
+                else:
+                    msg = "OK"    
+            return msg
+
+        res = self.EDC_AND_LAB.apply(mismatch_check_helper, axis=1)
+
+        res_dict = res.to_dict()
+        
+        new_dict = self.make_json_nested(res_dict, "Compound Mismatch")
+    
+        self.checks_list.append(new_dict)
+        return new_dict
+        
     def EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
         pass 
+    
+    def run_all_checks(self):
+        checks = ["DM_input", "PD_comment", "structural_integrity",  \
+                  "time_between_replicate_runs", "data_quality_requirement", \
+                  "contribution_to_final_dataset", "AFXa_r_contribution", "DTI_R_contribution", \
+                  "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing"]
+        for check in checks:
+            print(f"Running {check} check")
+            getattr(self, check)()
+        
+        self.restructure_json()
+        return self.checks
     
     def restructure_json(self):     
         # TODO: rename variables
@@ -281,36 +319,6 @@ class Checker:
     #     self.checks['administered_after_being_drawn'] = status
                
     
-    # EDC and LAB
-    # def compound_name_mismatch(self):
-    #     def mismatch_check_helper(x):
-    #         if x['Cohort'] == "A":
-    #             msg = "Healthy"
-    #         else:
-    #             print(x["Drug_compound"], x["LAB_compound"])
-    #             if (pd.isna(x["Drug_compound"])) and (pd.isna(x["LAB_compound"])):
-    #                 msg = "Drugs from both EDC and LAB are missing"
-    #             elif pd.isna(x["Drug_compound"]):
-    #                 msg = "Drug from EDC is missing"
-    #             elif pd.isna(x["LAB_compound"]):
-    #                 msg = "Drug from LAB is missing"
-    #             elif x["Drug_compound"] != x["LAB_compound"]:
-    #                 msg = "Drugs from EDC and LAB do not match"
-    #             else:
-    #                 msg = "OK"    
-    #         return msg
-    
-    #     msg = "Checking if compound name in EDC and LAB match"
-    #     logger.info(msg)
-        
-    #     self.EDC_AND_LAB.apply(mismatch_check_helper, axis=1)
-        
-    #     if self.EDC['Drug_compound'] != self.LAB['LAB_compound']:
-    #         status = "Compound name mismatch in EDC and LAB"
-    #         logger.warning("Administered date is after drawn date")
-        
-    #     self.checks['compound_name_mismatch'] = status
-    
     
     # TEG
     # def r_time_checks(self):
@@ -339,6 +347,8 @@ if __name__ == "__main__":
     ch = Checker(DATA_PATH)
     # ch.administered_after_being_drawn()
     # ch.compound_name_mismatch()
+    
+    print(dir(ch))
     ch.time_between_replicate_runs()
     ch.structural_integrity()
     ch.PD_comment()
@@ -347,4 +357,5 @@ if __name__ == "__main__":
 
     with open("checks_new_format.json", "w") as f:
         f.write(json.dumps(ch.checks, indent=4))
+        
         
