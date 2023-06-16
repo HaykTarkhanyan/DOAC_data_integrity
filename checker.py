@@ -15,7 +15,7 @@ df_dict = pd.read_excel(DATA_PATH, sheet_name=None)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-file_handler = logging.FileHandler(os.path.join("logs", "checker.log"), mode="w")
+file_handler = logging.FileHandler(os.path.join("logs", "checker_.log"), mode="w")
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
                               datefmt='%d-%b-%y %H:%M:%S')
@@ -337,21 +337,42 @@ class Checker:
         process_output(res, "AFXa")
         process_output(res, "DTI")
 
+    def FADS(self): # checks if both AFXa and DTI passed
+        # ! has to be called after AFXa_and_DTI function
+        for subject_id, info in self.checks.items():
+            for sample_id, info in info.items():
+                if "AFXa" in info and "DTI" in info:
+                    afxa_ok = info["AFXa"] == "OK"
+                    dti_ok = info["DTI"] == "OK"
+                    if afxa_ok and dti_ok:
+                        status = "OK"
+                    elif afxa_ok:
+                        status = "DTI failed"
+                    elif dti_ok:
+                        status = "AFXa failed"
+                    else:
+                        status = "Both DTI and AFXa failed"                
 
+                    self.checks[subject_id][sample_id]["FADS"] = status
+ 
+    
     
     def run_all_checks(self):
         checks = ["DM_input", "PD_comment", "structural_integrity",  \
                   "time_between_replicate_runs", "data_quality_requirement", \
                   "contribution_to_final_dataset", "AFXa_r_contribution", "DTI_R_contribution", \
-                  "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing", "AFXa_and_DTI"]
+                  "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing", \
+                  "AFXa_and_DTI"]
         
-        
-        checks = ["EDC_timing", "AFXa_and_DTI"]
         for check in checks:
             logger.info(f"Running {check} check")
             res = getattr(self, check)()
             logger.debug(f"{res}\n")
         self.restructure_json()
+        
+        logger.info("Running FADS check")
+        self.FADS()
+        
         
         file_path = os.path.join(self.output_folder, self.file_name)
         
@@ -438,19 +459,16 @@ class Checker:
 
     
 
-# if __name__ == "__main__":    
-#     ch = Checker(DATA_PATH)
-#     # ch.administered_after_being_drawn()
-#     # ch.compound_name_mismatch()
+if __name__ == "__main__":    
+    ch = Checker(DATA_PATH)
+    # ch.administered_after_being_drawn()
+    # ch.compound_name_mismatch()
     
-#     print(dir(ch))
-#     ch.time_between_replicate_runs()
-#     ch.structural_integrity()
-#     ch.PD_comment()
+    
+    ch.run_all_checks()
+    
 
-#     ch.restructure_json()
-
-#     with open("checks_new_format.json", "w") as f:
-#         f.write(json.dumps(ch.checks, indent=4))
+    with open("checks_new_format.json", "w") as f:
+        f.write(json.dumps(ch.checks, indent=4))
         
         
