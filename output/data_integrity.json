@@ -1,0 +1,84 @@
+[
+  {
+    "501-701-001": {
+      "1": {
+        "REP": {
+          "AFXa": {
+            "status": "OK",
+            "difference": 5
+          },
+          "DTI": {
+            "status": "OK",
+            "difference": 5
+          }
+        }
+      }
+    },
+    "501-701-101": {
+      "1": {
+        "REP": {
+          "AFXa": {
+            "status": "OK",
+            "difference": 195
+          },
+          "DTI": {
+            "status": "OK",
+            "difference": 195
+          }
+        }
+      }
+    },
+    "501-701-105": {
+      "1": {
+        "REP": {
+          "AFXa": {
+            "status": "OK",
+            "difference": 240
+          },
+          "DTI": {
+            "status": "OK",
+            "difference": 240
+          }
+        }
+      }
+    }
+  },
+  {
+    "501-701-001": {
+      "1": {
+        "SI": {
+          "AFXa": {
+            "status": "Received 2 runs with completed status"
+          },
+          "DTI": {
+            "status": "Received 2 runs with completed status"
+          }
+        }
+      }
+    },
+    "501-701-101": {
+      "1": {
+        "SI": {
+          "AFXa": {
+            "status": "Received 2 runs containing aborted status"
+          },
+          "DTI": {
+            "status": "Received 2 runs containing aborted status"
+          }
+        }
+      }
+    },
+    "501-701-105": {
+      "1": {
+        "SI": {
+          "AFXa": {
+            "status": "Received 2 runs containing error status"
+          },
+          "DTI": {
+            "status": "Received 2 runs containing error status"
+          }
+        }
+      }
+    }
+  }
+]us": "Healthy"}, "EDC_timing": {"status": "OK"}}}, "501-701-005": {"1": {"PD": {"status": "No Protocol Deviation"}, "DQR": {"status": "OK"}, "Compound Mismatch": {"status": "Healthy"}, "EDC_timing": {"status": "OK"}}}, "501-701-101": {"1": {"PD": {"status": "112.0 - wrong number of blood draws"}, "SI": {"AFXa": {"status": "Received 2 runs containing aborted status"}, "DTI": {"status": "Received 2 runs containing aborted status"}}, "REP": {"AFXa": {"status": "OK", "difference": 195.0}, "DTI": {"status": "OK", "difference": 195.0}}, "DQR": {"status": "OK"}, "LAB_LLOQ": {"status": "OK"}, "Compound Mismatch": {"status": "OK"}, "EDC_timing": {"status": "OK"}}, "2": {"PD": {"status": "No Protocol Deviation"}, "DQR": {"status": "OK"}, "LAB_LLOQ": {"status": "OK"}, "Compound Mismatch": {"status": "OK"}, "EDC_timing": {"status": "OK"}}, "3": {"PD": {"status": "No Protocol Deviation"}, "DQR": {"status": "OK"}, "Compound Mismatch": {"status": "Drug from LAB is missing"}, "EDC_timing": {"status": "OK"}}}, "501-701-104": {"1": {"PD": {"status": "No Protocol Deviation"}, "DQR": {"status": "OK"}, "LAB_LLOQ": {"status": "OK"}, "Compound Mismatch": {"status": "OK"}, "EDC_timing": {"status": "OK"}}, "2": {"PD": {"status": "404.0 - PD not found"}, "DQR": {"status": "OK"}, "LAB_LLOQ": {"status": "OK"}, "Compound Mismatch": {"status": "Drugs from EDC and LAB do not match"}, "EDC_timing": {"status": "OK"}}}, "501-701-105": {"1": {"PD": {"status": "No Protocol Deviation"}, "SI": {"AFXa": {"status": "Received 2 runs containing error status"}, "DTI": {"status": "Received 2 runs containing error status"}}, "REP": {"AFXa": {"status": "OK", "difference": 240.0}, "DTI": {"status": "OK", "difference": 240.0}}, "DQR": {"status": "OK"}, "LAB_LLOQ": {"status": "OK"}, "Compound Mismatch": {"status": "OK"}, "EDC_timing": {"status": "OK"}}}, "501-701-106": {"1": {"PD": {"status": "No Protocol Deviation"}, "DQR": {"status": "OK"}, "LAB_LLOQ": {"status": "OK"}, "Compound Mismatch": {"status": "OK"}, "EDC_timing": {"status": "OK"}}}}

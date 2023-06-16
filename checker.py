@@ -25,7 +25,7 @@ logger.addHandler(file_handler)
 
 
 class Checker:
-    def __init__(self, data_path) -> None:
+    def __init__(self, data_path, output_folder="output") -> None:
         self.checks_list = []
         self.data_path = data_path
         
@@ -50,7 +50,11 @@ class Checker:
         self.LAB.set_index("UID", inplace=True)
         
         self.EDC_AND_LAB = self.EDC.join(self.LAB)
-    
+        
+        self.output_folder = "output"
+        self.file_name = "data_integrity.json"
+        
+        
     def DM_input(self): # DM
         pass
     
@@ -255,10 +259,17 @@ class Checker:
                   "contribution_to_final_dataset", "AFXa_r_contribution", "DTI_R_contribution", \
                   "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing"]
         for check in checks:
-            print(f"Running {check} check")
+            logging.info(f"Running {check} check")
             getattr(self, check)()
         
         self.restructure_json()
+        
+        file_path = os.path.join(self.output_folder, self.file_name)
+        
+        logging.info(f"Saving checks to {file_path}")
+        with open(file_path, 'w') as f:
+            json.dump(self.checks, f)
+        
         return self.checks
     
     def restructure_json(self):     
