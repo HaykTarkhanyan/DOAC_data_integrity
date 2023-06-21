@@ -259,6 +259,8 @@ class Checker:
 
         # will need this later
         not_completed_dict = list(not_completed.set_index('UID').to_dict().values())[0]
+        not_completed_dict = {k: {"status": "Fail", "description": v} 
+                              for k, v in not_completed_dict.items() }
 
         # difference over mean check 
         completed = self.TEG[self.TEG.index.isin(completed_ids)]
@@ -298,13 +300,17 @@ class Checker:
             dev = x['over_4_std_devs_check']
 
             if diff == "Fail" and dev == "Fail":
-                return "Failed both `difference over mean` and `over 4 std devs`"
+                msg = "Failed both `difference over mean` and `over 4 std devs`"
             elif diff == "Fail":
-                return "Failed `difference over mean` check"
+                msg = "Failed `difference over mean` check"
             elif dev == "Fail":
-                return "Failed `over 4 std devs` check"
+                msg = "Failed `over 4 std devs` check"
             else:
-                return "OK"
+                msg = "OK"
+                
+            status = "OK" if msg == "OK" else "Fail"
+            
+            return {"status": status, "description": msg}
 
         res["r_time_status"] = res.apply(get_r_time_status, axis=1)
 
@@ -318,7 +324,7 @@ class Checker:
             res_dict = res.to_dict()
             res_dict.update(not_completed_dict)
             
-            new_dict = self.make_json_nested(res_dict, test_name)
+            new_dict = self.make_json_nested(res_dict, test_name, dont_include_status_key=True)
             
             self.checks_list.append(new_dict)
             return new_dict
@@ -392,7 +398,7 @@ class Checker:
         self.checks = new_data
     
     @staticmethod
-    def make_json_nested(res_dict, test_name):
+    def make_json_nested(res_dict, test_name, dont_include_status_key=False):
         """For handling simple cases like 
         '501-701-101_1': 'OK'
 
@@ -421,7 +427,10 @@ class Checker:
             if test_name not in new_dict[sample_id][subject_id]:
                 new_dict[sample_id][subject_id][test_name] = {}
             
-            new_dict[sample_id][subject_id][test_name]["status"] = value
+            if dont_include_status_key:
+                new_dict[sample_id][subject_id][test_name] = value
+            else:
+                new_dict[sample_id][subject_id][test_name]["status"] = value
 
         return new_dict
 
