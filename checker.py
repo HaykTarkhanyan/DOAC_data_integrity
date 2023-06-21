@@ -95,8 +95,8 @@ class Checker:
         self.checks_list.append(new_dict)
 
     def structural_integrity(self): # SI
-        # !
         # ? What if one run is error and one is aborted? 
+        # Error is prioritized over aborted
         def SI_check(x):
             if len(x) < 2:
                 return "Received <2 runs"
@@ -197,16 +197,6 @@ class Checker:
 
         self.checks_list.append(new_dict)
         return new_dict
-        
-    
-    def contribution_to_final_dataset(self): # FADS
-        pass 
-    
-    def AFXa_r_contribution(self): # AFXa
-        pass 
-    
-    def DTI_R_contribution(self): # DTI
-        pass
     
     def lab_LLOQ(self): # might be only one comment, might be multiple keys 
         res = (self.LAB["LAB_REP_results"] < self.LAB["LAB_LLOQ"]) \
@@ -250,7 +240,6 @@ class Checker:
         res_dict = res.to_dict()
 
         new_dict = self.make_json_nested(res_dict, "EDC_timing")
-        print(new_dict)
         self.checks_list.append(new_dict)
         return new_dict
     
@@ -345,22 +334,23 @@ class Checker:
                     afxa_ok = info["AFXa"] == "OK"
                     dti_ok = info["DTI"] == "OK"
                     if afxa_ok and dti_ok:
-                        status = "OK"
+                        msg = "OK"
                     elif afxa_ok:
-                        status = "DTI failed"
+                        msg = "DTI failed"
                     elif dti_ok:
-                        status = "AFXa failed"
+                        msg = "AFXa failed"
                     else:
-                        status = "Both DTI and AFXa failed"                
+                        msg = "Both DTI and AFXa failed"                
 
-                    self.checks[subject_id][sample_id]["FADS"] = status
- 
+                    status = "OK" if msg == "OK" else "Fail"
+
+                    self.checks[subject_id][sample_id]["FADS"] = {"status": status, "description": msg}
+    
     
     
     def run_all_checks(self):
         checks = ["DM_input", "PD_comment", "structural_integrity",  \
                   "time_between_replicate_runs", "data_quality_requirement", \
-                  "contribution_to_final_dataset", "AFXa_r_contribution", "DTI_R_contribution", \
                   "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing", \
                   "AFXa_and_DTI"]
         
@@ -383,7 +373,7 @@ class Checker:
         
         return self.checks
     
-    def restructure_json(self):     
+    def restructure_json(self):             
         # TODO: rename variables
         new_data = {}
         for item in self.checks_list:
