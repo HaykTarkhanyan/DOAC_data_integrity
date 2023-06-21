@@ -54,6 +54,7 @@ class Checker:
         
         self.output_folder = "output"
         self.file_name = "data_integrity.json"
+        self.sources_file_name = "data_sources.csv"
         
         
     def DM_input(self): # DM
@@ -385,7 +386,27 @@ class Checker:
             json.dump(self.checks, f)
         
         return self.checks
-    
+      
+    def get_available_sources(self):
+        # ! This one is used separately from the rest but still belongs to the class
+        """Returns list of available data sources"""
+        records = set(self.EDC.Subject_ID.to_list() 
+                      + self.TEG.TEG_SUB_ID.to_list() 
+                      + self.LAB.LAB_SUB_ID.to_list())
+
+        sources = pd.DataFrame()
+        sources["PATIENT ID"] = sorted(list(records))
+        sources["SITE"] = sources["PATIENT ID"].apply(lambda x: x.split("-")[1])
+        sources["TEG"] = sources["PATIENT ID"].apply(lambda x: x in self.TEG.TEG_SUB_ID.to_list())
+        sources["EDC"] = sources["PATIENT ID"].apply(lambda x: x in self.EDC.Subject_ID.to_list())
+        sources["LAB"] = sources["PATIENT ID"].apply(lambda x: x in self.LAB.LAB_SUB_ID.to_list())
+        
+        save_path = os.path.join(self.output_folder, self.sources_file_name)
+        logger.info(f"saving Available data sources to {save_path}")
+        
+        sources.to_csv(save_path, index=False)
+        return sources
+
     def restructure_json(self):             
         # TODO: rename variables
         new_data = {}
@@ -440,39 +461,11 @@ class Checker:
                 new_dict[sample_id][subject_id][test_name]["status"] = value
 
         return new_dict
-
-    
-    # TEG
-    # def r_time_checks(self):
-    #     completed_or_not = self.TEG.groupby("UID")['TEG_STATUS'].apply(lambda x: np.all(x == "Test Completed"))  \
-    #                                .replace(False, "Not all tests completed") \
-    #                                .reset_index()
-                                   
-    #     not_completed = completed_or_not[completed_or_not["TEG_STATUS"] == "Not all tests completed"]
-    #     completed = completed_or_not[completed_or_not['TEG_STATUS'] == True]
-
-    #     completed_ids = completed["UID"].to_list()
-        
-    #     completed = self.TEG[self.TEG.index.isin(completed_ids)]
-
-    #     res = completed.groupby(["UID", "TEST_NAME"]).agg(delta_r=("TEG_VALUE_R", lambda x: abs(x[0] - x[1])), 
-    #                                                       mean_r= ("TEG_VALUE_R", lambda x: np.mean(x))) \
-        
-    #     res = res.reset_index()
-
-    #     res['difference_over_mean_check'] = np.where((res['delta_r'] / res['mean_r']) <= 0.4, "OK", "FAIL")
-
-
     
 
 if __name__ == "__main__":    
     ch = Checker(DATA_PATH)
-    # ch.administered_after_being_drawn()
-    # ch.compound_name_mismatch()
-    
-    
     ch.run_all_checks()
-    
 
     with open("checks_new_format.json", "w") as f:
         f.write(json.dumps(ch.checks, indent=4))
