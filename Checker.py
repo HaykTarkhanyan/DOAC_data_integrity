@@ -1,4 +1,12 @@
 
+
+# TODO (in get_available_sources())
+# 1. add cohort
+# 2. add drug name (edc)
+# 3. add drug name (lab)
+# TODO
+# 1. change the input to read 3 different files
+
 # ! there is a lot of code duplication, need to refactor later
 import pandas as pd 
 import numpy as np
@@ -23,8 +31,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
-
-
 
 class Checker:
     def __init__(self, data_path: str, output_folder: str = "output") -> None:
@@ -75,7 +81,7 @@ class Checker:
             no_description = pd.isna(x['Protocol_deviation_description'])
             
             if no_code and no_description:
-                return "No Protocol Deviation"
+                return "OK"
             elif no_code and (not no_description):
                 return x['Protocol_deviation_description']
             elif (not no_code) and no_description:
@@ -323,6 +329,7 @@ class Checker:
         res["r_time_status"] = res.apply(get_r_time_status, axis=1)
 
         # ! Assumes that test status for the same run is the same for all channels (DTI, AFXa)
+        # It is
         def process_output(res, test_name):
             res = res[res["TEST_NAME"] == test_name]
 
@@ -361,7 +368,6 @@ class Checker:
                     self.checks[subject_id][sample_id]["FADS"] = {"status": status, "description": msg}
     
     
-    
     def run_all_checks(self) -> List[Dict]:
         checks = [check for check in dir(self) if callable(getattr(self, check))
                        and check.startswith("check_")]
@@ -376,7 +382,7 @@ class Checker:
         logger.info("Running FADS check")
         self.check_FADS()
         
-        
+
         file_path = os.path.join(self.output_folder, self.file_name)
         
         logger.info(f"Saving checks to {file_path}")
@@ -384,7 +390,7 @@ class Checker:
         with open(file_path, 'w') as f:
             json.dump(self.checks, f)
         
-        return self.checks
+        return self.checks # type: ignore (type hint)
       
     def get_available_sources(self) -> pd.DataFrame:
         # ! This one is used separately from the rest but still belongs to the class
