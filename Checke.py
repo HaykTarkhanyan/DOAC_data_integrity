@@ -2,6 +2,7 @@
 # ! there is a lot of code duplication, need to refactor later
 import pandas as pd 
 import numpy as np
+from typing import List, Dict
 import logging
 import json
 import os
@@ -26,7 +27,7 @@ logger.addHandler(file_handler)
 
 
 class Checker:
-    def __init__(self, data_path, output_folder="output") -> None:
+    def __init__(self, data_path: str, output_folder: str = "output") -> None:
         self.checks_list = []
         self.data_path = data_path
         
@@ -56,7 +57,7 @@ class Checker:
         self.file_name = "data_integrity.json"
         self.sources_file_name = "data_sources.csv"
         
-    def check_DM_input(self): # DM
+    def check_DM_input(self) -> dict: # DM
         counts = self.TEG.index.value_counts()
         res_dict = counts.apply(lambda x: {"status": "OK" if x == 4 else "Fail", 
                                            "run_count": x}).to_dict()
@@ -66,7 +67,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
       
-    def check_PD_comment(self): # PD
+    def check_PD_comment(self) -> dict: # PD
         # ? how should I return this
 
         def protocol_deviation(x):
@@ -100,8 +101,9 @@ class Checker:
             new_dict[sample_id][subject_id][test_name]["status"] = value
 
         self.checks_list.append(new_dict)
+        return new_dict
 
-    def check_structural_integrity(self): # SI
+    def check_structural_integrity(self) -> dict: # SI
         # ? What if one run is error and one is aborted? 
         # Error is prioritized over aborted
         def SI_check(x):
@@ -144,7 +146,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
-    def check_time_between_replicate_runs(self): # REP
+    def check_time_between_replicate_runs(self) -> dict: # REP
         def rep_check(x):
             if len(x) < 2:
                 return "Missing Run Time"
@@ -182,7 +184,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
     
-    def check_data_quality_requirement(self): # DQR
+    def check_data_quality_requirement(self)  -> dict: # DQR
         # ! this just return OK for all the records
         records = set(self.EDC.index.to_list() + self.TEG.index.to_list() 
                     + self.LAB.index.to_list())
@@ -205,7 +207,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
     
-    def check_lab_LLOQ(self): # might be only one comment, might be multiple keys 
+    def check_lab_LLOQ(self) -> dict: # might be only one comment, might be multiple keys 
         res = (self.LAB["LAB_REP_results"] < self.LAB["LAB_LLOQ"]) \
                .replace({False: "OK", True: "Below LLOQ"})
         res_dict = res.to_dict()
@@ -214,7 +216,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
-    def check_lab_edc_compound_mismatch(self): 
+    def check_lab_edc_compound_mismatch(self) -> dict: 
         def mismatch_check_helper(x):
             if x['Cohort'] == "A":
                 msg = "Healthy"
@@ -240,7 +242,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
-    def check_EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
+    def check_EDC_timing(self)  -> dict: # Last_drug_administration_date_time < WBC_date_time
         res = self.EDC['Last_drug_administration_date_time'] > self.EDC['WBC_date_time']
         res.replace({False: "OK", True: "Administration > WBC"}, inplace=True)
         res_dict = res.to_dict()
@@ -249,7 +251,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
     
-    def check_AFXa_and_DTI(self):
+    def check_AFXa_and_DTI(self) -> None:
         # ! talk with Arman about what we will be displaying
         # getting info on which runs were successful
         group = self.TEG.groupby("UID")['TEG_STATUS']
@@ -338,7 +340,7 @@ class Checker:
         process_output(res, "AFXa")
         process_output(res, "DTI")
 
-    def check_FADS(self): # checks if both AFXa and DTI passed
+    def check_FADS(self) -> None: # checks if both AFXa and DTI passed
         # ! has to be called after AFXa_and_DTI function
         for subject_id, info in self.checks.items():
             for sample_id, info in info.items():
@@ -360,7 +362,7 @@ class Checker:
     
     
     
-    def run_all_checks(self):
+    def run_all_checks(self) -> List[Dict]:
         checks = [check for check in dir(self) if callable(getattr(self, check))
                        and check.startswith("check_")]
         checks.remove("check_FADS") # will run this after AFXa_and_DTI and restucture_json
@@ -384,7 +386,7 @@ class Checker:
         
         return self.checks
       
-    def get_available_sources(self):
+    def get_available_sources(self) -> pd.DataFrame:
         # ! This one is used separately from the rest but still belongs to the class
         """Returns list of available data sources"""
         records = set(self.EDC.Subject_ID.to_list() 
@@ -404,7 +406,7 @@ class Checker:
         sources.to_csv(save_path, index=False)
         return sources
 
-    def restructure_json(self):             
+    def restructure_json(self) -> None:             
         # TODO: rename variables
         new_data = {}
         for item in self.checks_list:
@@ -423,7 +425,7 @@ class Checker:
         self.checks = new_data
     
     @staticmethod
-    def make_json_nested(res_dict, test_name, dont_include_status_key=False):
+    def make_json_nested(res_dict, test_name, dont_include_status_key=False) -> dict:
         """For handling simple cases like 
         '501-701-101_1': 'OK'
 
@@ -463,6 +465,7 @@ class Checker:
 if __name__ == "__main__":    
     ch = Checker(DATA_PATH)
     ch.run_all_checks()
+    ch.get_available_sources()
 
     with open("checks_new_format.json", "w") as f:
         f.write(json.dumps(ch.checks, indent=4))
