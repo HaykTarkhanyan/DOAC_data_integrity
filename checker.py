@@ -57,7 +57,15 @@ class Checker:
         
         
     def DM_input(self): # DM
-        pass
+        counts = self.TEG.index.value_counts()
+        res_dict = counts.apply(lambda x: {"status": "OK" if x == 4 else "Fail", 
+                                           "run_count": x}).to_dict()
+        
+        new_dict = self.make_json_nested(res_dict, "DM", dont_include_status_key=True)
+        
+        self.checks_list.append(new_dict)
+        return new_dict
+      
     
     def PD_comment(self): # PD
         # ? how should I return this
@@ -202,7 +210,6 @@ class Checker:
         res = (self.LAB["LAB_REP_results"] < self.LAB["LAB_LLOQ"]) \
                .replace({False: "OK", True: "Below LLOQ"})
         res_dict = res.to_dict()
-        
         new_dict = self.make_json_nested(res_dict, "LAB_LLOQ")
         
         self.checks_list.append(new_dict)
