@@ -56,8 +56,7 @@ class Checker:
         self.file_name = "data_integrity.json"
         self.sources_file_name = "data_sources.csv"
         
-        
-    def DM_input(self): # DM
+    def check_DM_input(self): # DM
         counts = self.TEG.index.value_counts()
         res_dict = counts.apply(lambda x: {"status": "OK" if x == 4 else "Fail", 
                                            "run_count": x}).to_dict()
@@ -67,8 +66,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
       
-    
-    def PD_comment(self): # PD
+    def check_PD_comment(self): # PD
         # ? how should I return this
 
         def protocol_deviation(x):
@@ -103,7 +101,7 @@ class Checker:
 
         self.checks_list.append(new_dict)
 
-    def structural_integrity(self): # SI
+    def check_structural_integrity(self): # SI
         # ? What if one run is error and one is aborted? 
         # Error is prioritized over aborted
         def SI_check(x):
@@ -146,7 +144,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
-    def time_between_replicate_runs(self): # REP
+    def check_time_between_replicate_runs(self): # REP
         def rep_check(x):
             if len(x) < 2:
                 return "Missing Run Time"
@@ -184,7 +182,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
     
-    def data_quality_requirement(self): # DQR
+    def check_data_quality_requirement(self): # DQR
         # ! this just return OK for all the records
         records = set(self.EDC.index.to_list() + self.TEG.index.to_list() 
                     + self.LAB.index.to_list())
@@ -207,7 +205,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
     
-    def lab_LLOQ(self): # might be only one comment, might be multiple keys 
+    def check_lab_LLOQ(self): # might be only one comment, might be multiple keys 
         res = (self.LAB["LAB_REP_results"] < self.LAB["LAB_LLOQ"]) \
                .replace({False: "OK", True: "Below LLOQ"})
         res_dict = res.to_dict()
@@ -216,7 +214,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
-    def lab_edc_compound_mismatch(self): 
+    def check_lab_edc_compound_mismatch(self): 
         def mismatch_check_helper(x):
             if x['Cohort'] == "A":
                 msg = "Healthy"
@@ -242,7 +240,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
         
-    def EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
+    def check_EDC_timing(self): # Last_drug_administration_date_time < WBC_date_time
         res = self.EDC['Last_drug_administration_date_time'] > self.EDC['WBC_date_time']
         res.replace({False: "OK", True: "Administration > WBC"}, inplace=True)
         res_dict = res.to_dict()
@@ -251,7 +249,7 @@ class Checker:
         self.checks_list.append(new_dict)
         return new_dict
     
-    def AFXa_and_DTI(self):
+    def check_AFXa_and_DTI(self):
         # ! talk with Arman about what we will be displaying
         # getting info on which runs were successful
         group = self.TEG.groupby("UID")['TEG_STATUS']
@@ -340,7 +338,7 @@ class Checker:
         process_output(res, "AFXa")
         process_output(res, "DTI")
 
-    def FADS(self): # checks if both AFXa and DTI passed
+    def check_FADS(self): # checks if both AFXa and DTI passed
         # ! has to be called after AFXa_and_DTI function
         for subject_id, info in self.checks.items():
             for sample_id, info in info.items():
@@ -363,19 +361,18 @@ class Checker:
     
     
     def run_all_checks(self):
-        checks = ["DM_input", "PD_comment", "structural_integrity",  \
-                  "time_between_replicate_runs", "data_quality_requirement", \
-                  "lab_LLOQ", "lab_edc_compound_mismatch", "EDC_timing", \
-                  "AFXa_and_DTI"]
+        checks = [check for check in dir(self) if callable(getattr(self, check))
+                       and check.startswith("check_")]
+        checks.remove("check_FADS") # will run this after AFXa_and_DTI and restucture_json
         
         for check in checks:
-            logger.info(f"Running {check} check")
+            logger.info(f"Running {check}")
             res = getattr(self, check)()
             logger.debug(f"{res}\n")
         self.restructure_json()
         
         logger.info("Running FADS check")
-        self.FADS()
+        self.check_FADS()
         
         
         file_path = os.path.join(self.output_folder, self.file_name)
