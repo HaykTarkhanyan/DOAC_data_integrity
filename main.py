@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from checker import Checker
+from Checke import Checker
 
 DATA_PATH = "data_integrity.xlsx"
 
@@ -18,7 +18,13 @@ def run_all_checks(data_path: str):
     
     return ch.checks
 
+@app.get("/data_sources")
+def get_available_sources(data_path: str):
+    ch = Checker(data_path) 
+    
+    return ch.get_available_sources()   
 
-run_all_checks(DATA_PATH)
+if __name__ == "__main__":
+    run_all_checks(DATA_PATH)
 
 
