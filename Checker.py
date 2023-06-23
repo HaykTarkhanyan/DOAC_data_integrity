@@ -298,7 +298,7 @@ class Checker:
         def std_deviation_check(x):
             if x['TEST_NAME'] == "AFXa":
                 sigmas = (x['delta_r'] - afxa_mean) / afxa_std 
-            elif x['TEST_NAME'] == "DTI":
+            else:
                 sigmas = (x['delta_r'] - dti_mean) / dti_std
             
             if sigmas <= 4:
@@ -392,25 +392,25 @@ class Checker:
         
         return self.checks # type: ignore (type hint)
       
-    def get_available_sources(self) -> pd.DataFrame:
-        # ! This one is used separately from the rest but still belongs to the class
-        """Returns list of available data sources"""
-        records = set(self.EDC.Subject_ID.to_list() 
-                      + self.TEG.TEG_SUB_ID.to_list() 
-                      + self.LAB.LAB_SUB_ID.to_list())
+    # def get_available_sources(self) -> pd.DataFrame:
+    #     # ! This one is used separately from the rest but still belongs to the class
+    #     """Returns list of available data sources"""
+    #     records = set(self.EDC.Subject_ID.to_list() 
+    #                   + self.TEG.TEG_SUB_ID.to_list() 
+    #                   + self.LAB.LAB_SUB_ID.to_list())
 
-        sources = pd.DataFrame()
-        sources["PATIENT ID"] = sorted(list(records))
-        sources["SITE"] = sources["PATIENT ID"].apply(lambda x: x.split("-")[1])
-        sources["TEG"] = sources["PATIENT ID"].apply(lambda x: x in self.TEG.TEG_SUB_ID.to_list())
-        sources["EDC"] = sources["PATIENT ID"].apply(lambda x: x in self.EDC.Subject_ID.to_list())
-        sources["LAB"] = sources["PATIENT ID"].apply(lambda x: x in self.LAB.LAB_SUB_ID.to_list())
+    #     sources = pd.DataFrame()
+    #     sources["PATIENT ID"] = sorted(list(records))
+    #     sources["SITE"] = sources["PATIENT ID"].apply(lambda x: x.split("-")[1])
+    #     sources["TEG"] = sources["PATIENT ID"].apply(lambda x: x in self.TEG.TEG_SUB_ID.to_list())
+    #     sources["EDC"] = sources["PATIENT ID"].apply(lambda x: x in self.EDC.Subject_ID.to_list())
+    #     sources["LAB"] = sources["PATIENT ID"].apply(lambda x: x in self.LAB.LAB_SUB_ID.to_list())
         
-        save_path = os.path.join(self.output_folder, self.sources_file_name)
-        logger.info(f"saving Available data sources to {save_path}")
+    #     save_path = os.path.join(self.output_folder, self.sources_file_name)
+    #     logger.info(f"saving Available data sources to {save_path}")
         
-        sources.to_csv(save_path, index=False)
-        return sources
+    #     sources.to_csv(save_path, index=False)
+    #     return sources
 
     def restructure_json(self) -> None:             
         # TODO: rename variables
